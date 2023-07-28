@@ -14,7 +14,8 @@ class ForceEstimation
 
 public:
 
-    // CARTESIO_DECLARE_SMART_PTR(ForceEstimation)
+    typedef std::shared_ptr<ForceEstimation> Ptr;
+    typedef std::weak_ptr<ForceEstimation> WeakPtr;
 
     static const double DEFAULT_SVD_THRESHOLD;
 

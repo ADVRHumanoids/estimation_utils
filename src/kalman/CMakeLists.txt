@@ -1,4 +1,4 @@
-add_library(kalman SHARED
+add_library(kalman
     kalman.cpp)
 
 set_target_properties(kalman PROPERTIES PREFIX "${PROJECT_NAME}_")

@@ -1,9 +1,9 @@
 find_package(XBotInterface REQUIRED)
 find_package(matlogger2 REQUIRED)
 
-add_library(payload_estimation SHARED
+add_library(payload_estimation
     payload_estimation.cpp
-    ForceEstimation.cpp)
+    force_estimation.cpp)
 
 set_target_properties(payload_estimation PROPERTIES PREFIX "${PROJECT_NAME}_")
 
