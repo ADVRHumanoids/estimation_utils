@@ -1,12 +1,13 @@
-#include <estimation_utils/payload/ForceEstimation.h>
+#include <estimation_utils/force_estimation/ForceEstimation.h>
 
 using namespace estimation_utils;
 
-const double ForceEstimation::DEFAULT_SVD_THRESHOLD = 0.05;
 
 ForceEstimation::ForceEstimation(XBot::ModelInterface::ConstPtr model, 
+                                 double rate,
                                  double svd_threshold):
     _model(model),
+    _rate(rate),
     _ndofs(0)
 {
     _svd.setThreshold(svd_threshold);
@@ -75,6 +76,7 @@ XBot::ForceTorqueSensor::ConstPtr ForceEstimation::add_link(std::string name,
     static int id = -1;
     t.sensor = std::make_shared<XBot::ForceTorqueSensor>(urdf_link, id--);
     t.dofs = dofs;
+    t.wrench_offset.setZero();
     
     _tasks.push_back(t);
     
@@ -173,8 +175,23 @@ void ForceEstimation::update()
         
         wrench.head<3>() = sensor_R_w * wrench.head<3>();
         wrench.tail<3>() = sensor_R_w * wrench.tail<3>();
-        
-        t.sensor->setWrench(wrench, 0.0);
+
+        if(_reset_offset_running) {
+            _reset_offset_i++; 
+            std::cout << _reset_offset_i  << " / " << _reset_offset_N << std::endl;
+
+            //moving average
+            t.wrench_offset = t.wrench_offset + (wrench - t.wrench_offset) / _reset_offset_i;
+
+            if (_reset_offset_i >= _reset_offset_N) {
+
+                _reset_offset_running = false;
+            }
+
+        }
+        std::cout << wrench.transpose()  << std::endl;
+        std::cout << t.wrench_offset.transpose()  << std::endl;
+        t.sensor->setWrench(wrench - t.wrench_offset, 0.0);
         
     }
 }
@@ -184,6 +201,21 @@ bool ForceEstimation::getResiduals(Eigen::VectorXd& res) const
     res = _y;
     return true;
 }
+
+void ForceEstimation::resetOffset(double sec) {
+
+    if (sec > 0) {
+        _reset_offset_i = 0;
+        _reset_offset_running = true;
+        _reset_offset_N = sec * _rate;
+    } 
+
+    for(TaskInfo& t : _tasks)
+    { 
+        t.wrench_offset.setZero();
+    }
+}
+
 
 void estimation_utils::ForceEstimation::log(XBot::MatLogger2::Ptr logger) const
 {
@@ -212,9 +244,8 @@ ForceEstimationMomentumBased::ForceEstimationMomentumBased(XBot::ModelInterface:
                                                            double rate,
                                                            double svd_threshold,
                                                            double obs_bw):
-    ForceEstimation(model, svd_threshold),
-    _k_obs(2.0 * M_PI * obs_bw),
-    _rate(rate)
+    ForceEstimation(model, rate, svd_threshold),
+    _k_obs(2.0 * M_PI * obs_bw)
 {
     init_momentum_obs();
 }

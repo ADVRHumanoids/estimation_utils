@@ -7,6 +7,8 @@ set(ESTIMATION_UTILS_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_subdirectory(src/kalman)
 
+add_subdirectory(src/force_estimation)
+
 add_subdirectory(src/payload)
 
 add_subdirectory(src/nodes)
