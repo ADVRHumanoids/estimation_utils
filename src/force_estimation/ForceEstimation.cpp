@@ -178,7 +178,6 @@ void ForceEstimation::update()
 
         if(_reset_offset_running) {
             _reset_offset_i++; 
-            std::cout << _reset_offset_i  << " / " << _reset_offset_N << std::endl;
 
             //moving average
             t.wrench_offset = t.wrench_offset + (wrench - t.wrench_offset) / _reset_offset_i;
@@ -189,8 +188,6 @@ void ForceEstimation::update()
             }
 
         }
-        std::cout << wrench.transpose()  << std::endl;
-        std::cout << t.wrench_offset.transpose()  << std::endl;
         t.sensor->setWrench(wrench - t.wrench_offset, 0.0);
         
     }
