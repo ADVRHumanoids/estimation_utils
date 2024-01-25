@@ -1,0 +1,9 @@
+force_estimator:
+  rate: 100.0
+  use_momentum_based: false
+  is_model_floating_base: false
+  model_type: RBDL
+  links: [relax_arm1_linkEndEffector]
+  chains: [arm]
+  relax_arm1_linkEndEffector:
+    dofs: [0, 1, 2]

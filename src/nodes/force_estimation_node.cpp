@@ -5,12 +5,14 @@
 #include <XBotInterface/RobotInterface.h>
 #include <RobotInterfaceROS/ConfigFromParam.h>
 
-#include </home/tori/estimation_utils/install/include/estimation_utils/estimation_utils/force_estimation/ForceEstimation.h>
+#include <estimation_utils/force_estimation/ForceEstimation.h>
 #include <matlogger2/matlogger2.h>
 
-#include <utils/UtilsXbot.h>
-
 #include <std_srvs/Empty.h>
+
+//for waitForXbotCore method
+#include <xbot_msgs/PluginStatus.h>
+
 
 //https://github.com/ADVRHumanoids/CartesianInterface/blob/2.0-devel/src/ros/ForceEstimationNode.cpp
 
@@ -24,6 +26,43 @@ bool wrenchZeroOffsetClbk(std_srvs::Empty::Request &req,
     return true;
 }
 
+bool waitForXbotCore(ros::NodeHandle* nh, ros::Duration timeout = ros::Duration(-1)) {
+    
+    //ros::Time startTime = ros::Time::now();
+    ros::ServiceClient client = nh->serviceClient<xbot_msgs::PluginStatus>("/xbotcore/ros_io/state");
+
+    auto wait_lambda = [&](){
+        
+        ROS_INFO_STREAM("Waiting for XbotCore...");
+        if (!client.waitForExistence(timeout)) {
+            return false;
+        }
+        
+        return true;
+    };
+    
+    if (! wait_lambda()) {
+        return false;
+    }
+    
+    xbot_msgs::PluginStatus status;
+    ros::Rate r(10);
+    ros::Duration(1).sleep(); //necessary because idk but service is not really ready and the client.call hands 4ever
+    while(status.response.status.compare("Running") != 0) {
+        
+        if (!client.call(status)) {
+//             ROS_INFO_STREAM("Call for XbotCore fail, I will retry...");
+//             if (! wait_lambda()) {
+//                 return false;
+//             }
+        }
+        r.sleep();
+    }
+
+    return true;
+    
+}
+
 int main(int argc, char ** argv)
 {
     
@@ -32,7 +71,7 @@ int main(int argc, char ** argv)
     ros::NodeHandle nh_priv("~");
     
     //lets wait for xbot
-    if (!tpo::utils::waitForXbotCore(&nh_priv)) {
+    if (!waitForXbotCore(&nh_priv)) {
         
         ROS_ERROR_STREAM("WaitForXbotCore failed, exiting..");
         return -1;
