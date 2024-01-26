@@ -6,6 +6,8 @@
 // #include <cartesian_interface/Macro.h>
 #include <matlogger2/matlogger2.h>
 
+#include <estimation_utils/utils/SecondOrderFilter.h>
+
 namespace estimation_utils
 {
 
@@ -59,6 +61,8 @@ public:
 
     void resetOffset(double sec=3);
 
+    bool initFilter(const double& damping = 0.8, const double& bw = 3, const double& dead_zone = 0);
+
 protected:
 
     XBot::ModelInterface::ConstPtr _model;
@@ -76,6 +80,7 @@ private:
         std::string link_name;
         //probably is better to store this into the forceTorque class
         Eigen::Vector6d wrench_offset;
+        estimation_utils::utils::FilterWrap<Eigen::Vector6d>::Ptr filter;
     };
 
     std::set<int> _ignore_idx;
@@ -98,6 +103,13 @@ private:
     bool _reset_offset_running  = false;
     unsigned int _reset_offset_i = 0;
     double _reset_offset_N = 0;
+
+    //filter things. For now all ft have the same filter params
+    double _filter_damping;
+    double _filter_bw;
+    double _filter_dead_zone;
+    bool _filter_in_use = false;
+
 };
 
 class ForceEstimationMomentumBased : public ForceEstimation

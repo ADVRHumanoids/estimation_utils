@@ -16,12 +16,12 @@
     <rosparam file="$(arg config_file)" command="load"/>
 
     <node pkg="estimation_utils" 
-          type="force_estimation_node" 
+          type="force_estimation_node_executable" 
           name="force_estimator"
           output="screen">
 		  
-		<remap from="~torque_offset" to="cartesian/torque_offset"/>
-		<remap from="/xbotcore/command" to="null"/>
+      <remap from="~torque_offset" to="cartesian/torque_offset"/>
+      <remap from="/xbotcore/command" to="null"/>
                     
     </node>
     

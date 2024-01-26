@@ -17,7 +17,7 @@
     <remap from="force_estimator/robot_description_semantic" to="xbotcore/robot_description_semantic"/>
 
     <node pkg="estimation_utils" 
-          type="force_estimation_node" 
+          type="force_estimation_node_executable" 
           name="force_estimator"
           output="screen">
 		  

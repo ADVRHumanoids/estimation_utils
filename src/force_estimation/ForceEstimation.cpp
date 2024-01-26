@@ -185,10 +185,28 @@ void ForceEstimation::update()
             if (_reset_offset_i >= _reset_offset_N) {
 
                 _reset_offset_running = false;
+                if (_filter_in_use) {
+                    t.filter->reset();
+                }
             }
 
         }
-        t.sensor->setWrench(wrench - t.wrench_offset, 0.0);
+        
+        wrench = wrench - t.wrench_offset;
+
+        if (_filter_in_use) {
+            if (_filter_dead_zone > 0){
+                for (int i=0; i<wrench.size(); i++) {
+
+                    if (std::abs(wrench[i]) < _filter_dead_zone) {
+                        wrench[i] = 0;
+                    }
+                }
+            }
+            wrench = t.filter->process(wrench); 
+        }
+
+        t.sensor->setWrench(wrench, 0.0);
         
     }
 }
@@ -213,6 +231,21 @@ void ForceEstimation::resetOffset(double sec) {
     }
 }
 
+bool ForceEstimation::initFilter(const double& damping, const double& bw, const double& dead_zone) {
+    
+    _filter_damping = damping;
+    _filter_bw = bw;
+    _filter_dead_zone = dead_zone;
+    _filter_in_use = true;
+
+    for(TaskInfo& t : _tasks)
+    {
+        t.filter = std::make_shared<estimation_utils::utils::FilterWrap<Eigen::Vector6d>>(
+            _filter_damping, _filter_bw, 1.0/_rate, 6);
+    }
+    
+    return true;
+} 
 
 void estimation_utils::ForceEstimation::log(XBot::MatLogger2::Ptr logger) const
 {

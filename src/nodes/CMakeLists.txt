@@ -15,17 +15,26 @@ target_link_libraries(payload_estimation_node
     ${eigen_conversions_LIBRARIES}
     )
 
-add_executable(force_estimation_node
-    force_estimation_node.cpp)
-
-
+add_library(force_estimation_node
+    ForceEstimationNode.cpp
+)
 target_link_libraries(force_estimation_node
     force_estimation
+    ${roscpp_LIBRARIES}
+    ${eigen_conversions_LIBRARIES}
+)
+
+add_executable(force_estimation_node_executable
+    force_estimation_node.cpp)
+
+target_link_libraries(force_estimation_node_executable
+    force_estimation_node
     ${roscpp_LIBRARIES}
 )
 
 install(TARGETS 
-  force_estimation_node  
+  force_estimation_node_executable  
+  force_estimation_node
   payload_estimation_node
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}

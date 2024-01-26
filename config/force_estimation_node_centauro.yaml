@@ -3,9 +3,25 @@ force_estimator:
   use_momentum_based: false
   is_model_floating_base: true
   model_type: RBDL
-  links: [arm1_8, arm2_8]
+  links: [arm1_6, arm2_6]
   chains: [left_arm, right_arm]
   arm1_8:
     dofs: [0, 1, 2]
   arm2_8:
     dofs: [0, 1, 2]
+  ignored_joints: []
+  svd_threshold: 0.05
+  #reset offset
+  sec_to_reset: 3
+  #log
+  enable_log: false
+  #ref frame wrt forces are published
+  ref_frame: pelvis
+  #filter
+  enable_filter: true
+  filter_damp: 0.8
+  filter_bw: 3
+  filter_dead_zone: 0
+  #markers
+  pub_arrows: true
+  
