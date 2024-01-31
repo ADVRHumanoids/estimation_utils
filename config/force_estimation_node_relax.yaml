@@ -7,3 +7,18 @@ force_estimator:
   chains: [arm]
   relax_arm1_linkEndEffector:
     dofs: [0, 1, 2]
+  ignored_joints: []
+  svd_threshold: 0.05
+  #reset offset
+  sec_to_reset: 3
+  #log
+  enable_log: false
+  #ref frame wrt forces are published
+  ref_frame: ""
+  #filter
+  enable_filter: true
+  filter_damp: 0.8
+  filter_bw: 3
+  filter_dead_zone: 0
+  #markers
+  pub_arrows: true
