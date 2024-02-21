@@ -3,9 +3,17 @@ project(estimation_utils VERSION 1.0.0)
 
 find_package(Eigen3 REQUIRED)
 
+find_package(catkin REQUIRED)
+
+catkin_package()
+
 set(ESTIMATION_UTILS_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
+include_directories(include/utils)
+
 add_subdirectory(src/kalman)
+
+add_subdirectory(src/force_estimation)
 
 add_subdirectory(src/payload)
 
