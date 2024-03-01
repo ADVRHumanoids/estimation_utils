@@ -121,6 +121,9 @@ bool ForceEstimationNode::init()
         _marker.points.resize(2);
         _marker.points.at(0) = geometry_msgs::Point();
 
+        _arrow_scale_factor = _nh->param("arrow_scale_factor", 1);
+        _arrow_max_norm = _nh->param("arrow_max_norm", 5);
+
     }
     
     return true;
@@ -276,9 +279,11 @@ void ForceEstimationNode::publishArrows() {
         //Eigen::Vector3d vect = quat * wrench.head<3>();
         Eigen::Vector3d vect = wrench.head<3>();
 
+        vect /= _arrow_scale_factor;
+
         //saturate arrow
-        if (vect.norm() > 0.5) {
-            vect *= 0.5 / vect.norm() ;
+        if (vect.norm() > _arrow_max_norm) {
+            vect *= _arrow_max_norm / vect.norm() ;
         }
 
         geometry_msgs::Point point1;

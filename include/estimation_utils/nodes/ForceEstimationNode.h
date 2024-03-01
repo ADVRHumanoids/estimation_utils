@@ -54,6 +54,7 @@ private:
    
     //markers pub
     bool _pub_markers;
+    double _arrow_scale_factor, _arrow_max_norm;
     ros::Publisher _arrows_pub;
     visualization_msgs::Marker _marker;
 

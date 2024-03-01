@@ -24,4 +24,9 @@ force_estimator:
   filter_dead_zone: 0
   #markers
   pub_arrows: true
+  #The scale factor will scale the incoming forces vector to show the arrow with a scaled magnitude.
+  #Then, after the scaling, if the arrow has a norm > arrow_max_norm, the arrow norm will be saturated.
+  #Consider that arrow_max_norm are meters, so set these values according to robot size for a useful visualization
+  arrow_scale_factor: 20  # The number will DIVIDE each component, so bigger == shorter arrows
+  arrow_max_norm: 3
   

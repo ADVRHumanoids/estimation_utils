@@ -22,3 +22,5 @@ force_estimator:
   filter_dead_zone: 0
   #markers
   pub_arrows: true
+  arrow_scale_factor: 30  # The number will DIVIDE each component, so bigger == shorter arrows
+  arrow_max_norm: 3
