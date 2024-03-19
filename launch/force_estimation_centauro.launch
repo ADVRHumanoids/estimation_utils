@@ -3,6 +3,11 @@
 <!-- https://github.com/ADVRHumanoids/centauro_cartesio/tree/2.0-devel/launch -->
     
     <arg name="config_file" default="$(find estimation_utils)/config/force_estimation_node_centauro.yaml"/>
+
+    <arg name="gdb" default="false"/> <!-- for debug with gdb -->
+    <arg if="$(arg gdb)" name="prefix" value="gdb -ex run --arg" />
+    <arg unless="$(arg gdb)" name="prefix" value="" />
+
     <!-- 
     <arg name="robot_description" default="$(find centauro_urdf)/urdf/centauro.urdf" />
     <arg name="robot_description_semantic" default="$(find centauro_urdf)/srdf/centauro.srdf" /> 
@@ -18,7 +23,9 @@
     <node pkg="estimation_utils" 
           type="force_estimation_node_executable" 
           name="force_estimator"
-          output="screen">
+          output="screen"
+          launch-prefix="$(arg prefix)">
+
 		  
       <remap from="~torque_offset" to="cartesian/torque_offset"/>
       <remap from="/xbotcore/command" to="null"/>

@@ -4,6 +4,10 @@
   
     <arg name="config_file" default="$(find estimation_utils)/config/force_estimation_node_relax.yaml"/>
 
+    <arg name="gdb" default="false"/> <!-- for debug with gdb -->
+    <arg if="$(arg gdb)" name="prefix" value="gdb -ex run --arg" />
+    <arg unless="$(arg gdb)" name="prefix" value="" />
+    
     <!-- 
     <arg name="robot_description" default="$(find relax_urdf)/urdf/relax.urdf" />
     <arg name="robot_description_semantic" default="$(find relax_srdf)/srdf/relax.srdf" />
@@ -13,13 +17,16 @@
 
     <rosparam file="$(arg config_file)" command="load"/>
 
+
+
     <remap from="force_estimator/robot_description" to="xbotcore/robot_description"/>
     <remap from="force_estimator/robot_description_semantic" to="xbotcore/robot_description_semantic"/>
 
     <node pkg="estimation_utils" 
           type="force_estimation_node_executable" 
           name="force_estimator"
-          output="screen">
+          output="screen"
+          launch-prefix="$(arg prefix)">
 		  
 		<remap from="~torque_offset" to="cartesian/torque_offset"/>
 		<remap from="/xbotcore/command" to="null"/>
