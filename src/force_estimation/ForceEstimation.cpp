@@ -299,7 +299,9 @@ void ForceEstimationMomentumBased::compute_residual(Eigen::VectorXd& res)
 
     _y = _k_obs*(_p1 - _p2 - _p0);
       
-    getResiduals(res);
+    //strange bug here res is empty  
+    //getResiduals(res);
+    res = _y;
     
 }
 
