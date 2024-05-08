@@ -7,7 +7,7 @@ force_estimator:
   chains: [arm]
   dagana_1_tcp:
     dofs: [0, 1, 2, 3, 4, 5]
-  ignored_joints: [dagana_1_tcp]
+  ignored_joints: [dagana_1_claw_joint]
   svd_threshold: 0.05
   #reset offset
   sec_to_reset: 3
