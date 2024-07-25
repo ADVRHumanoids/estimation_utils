@@ -1,5 +1,5 @@
 #include <estimation_utils/payload/payload_estimation.h>
-#include <XBotInterface/Utils.h>
+#include <xbot2_interface/common/utils.h>
 
 using namespace estimation_utils;
 

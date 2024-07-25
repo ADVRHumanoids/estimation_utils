@@ -2,7 +2,7 @@
 #define ESTIMATION_UTILS_PAYLOAD_ESTIMATION_H
 
 #include <Eigen/Dense>
-#include <XBotInterface/ModelInterface.h>
+#include <xbot2_interface/xbotinterface2.h>
 #include <estimation_utils/payload/ForceEstimation.h>
 
 #include "../kalman/kalman.h"
