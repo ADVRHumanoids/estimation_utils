@@ -1,4 +1,4 @@
-find_package(XBotInterface REQUIRED)
+find_package(xbot2_interface REQUIRED)
 find_package(matlogger2 REQUIRED)
 
 add_library(payload_estimation
@@ -11,7 +11,7 @@ target_link_libraries(payload_estimation
     PUBLIC
     kalman
     Eigen3::Eigen
-    XBotInterface::XBotInterface
+    xbot2_interface::xbot2_interface
     matlogger2::matlogger2
 )
 

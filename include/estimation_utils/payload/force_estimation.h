@@ -1,10 +1,11 @@
 #ifndef ESTIMATION_UTILS_FORCE_EST_H
 #define ESTIMATION_UTILS_FORCE_EST_H
 
-#include <XBotInterface/ModelInterface.h>
+#include <xbot2_interface/xbotinterface2.h>
 #include <algorithm>
-// #include <cartesian_interface/Macro.h>
 #include <matlogger2/matlogger2.h>
+
+#include <set>
 
 namespace estimation_utils
 {

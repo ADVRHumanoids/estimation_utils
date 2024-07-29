@@ -18,7 +18,7 @@ XBot::ForceTorqueSensor::ConstPtr ForceEstimation::add_link(std::string name,
                                                             std::vector<std::string> chains)
 {
     // check link exists
-    auto urdf_link = _model->getUrdf().getLink(name);
+    auto urdf_link = _model->getUrdf()->getLink(name);
     
     if(!urdf_link)
     {
@@ -55,9 +55,9 @@ XBot::ForceTorqueSensor::ConstPtr ForceEstimation::add_link(std::string name,
             throw std::invalid_argument("Invalid chain '" + ch + "'");
         }
         
-        for(int id : _model->chain(ch).getJointIds())
+        for(auto j : _model->getChain(ch)->getJoints())
         {
-            meas_dofs.push_back(_model->getDofIndex(id));
+            meas_dofs.push_back(j->getVIndex());
         }
     }
     
@@ -73,7 +73,7 @@ XBot::ForceTorqueSensor::ConstPtr ForceEstimation::add_link(std::string name,
     TaskInfo t;
     t.link_name = name;
     static int id = -1;
-    t.sensor = std::make_shared<XBot::ForceTorqueSensor>(urdf_link, id--);
+    t.sensor = std::make_shared<XBot::ForceTorqueSensor>(name);
     t.dofs = dofs;
     
     _tasks.push_back(t);
@@ -102,8 +102,8 @@ void ForceEstimation::setIgnoredJoint(const std::string &jname)
 
 void ForceEstimation::compute_A_b()
 {
-    _Jtot.setZero(_ndofs, _model->getJointNum());
-    _Jtmp.setZero(6, _model->getJointNum());
+    _Jtot.setZero(_ndofs, _model->getNv());
+    _Jtmp.setZero(6, _model->getNv());
     _b.setZero(_meas_idx.size());
     _A.setZero(_meas_idx.size(), _ndofs);
     
@@ -174,7 +174,7 @@ void ForceEstimation::update()
         wrench.head<3>() = sensor_R_w * wrench.head<3>();
         wrench.tail<3>() = sensor_R_w * wrench.tail<3>();
         
-        t.sensor->setWrench(wrench, 0.0);
+        t.sensor->setMeasurement(wrench, XBot::wall_time::clock::now());
         
     }
 }
@@ -226,7 +226,7 @@ void ForceEstimationMomentumBased::compute_residual(Eigen::VectorXd& res)
     _model->computeGravityCompensation(_g);
 
     /* Observer */
-    _model->getInertiaMatrix(_M);
+    _model->computeInertiaMatrix(_M);
     _p1 = _M * _qdot;
 
     _Mdot = (_M - _M_old) * _rate;
@@ -244,13 +244,13 @@ void ForceEstimationMomentumBased::compute_residual(Eigen::VectorXd& res)
 
 void ForceEstimationMomentumBased::init_momentum_obs()
 {
-    _p1.setZero(_model->getJointNum());
-    _p2.setZero(_model->getJointNum());
-    _y.setZero(_model->getJointNum());
-    _coriolis.setZero(_model->getJointNum());
-    _h.setZero(_model->getJointNum());
+    _p1.setZero(_model->getNv());
+    _p2.setZero(_model->getNv());
+    _y.setZero(_model->getNv());
+    _coriolis.setZero(_model->getNv());
+    _h.setZero(_model->getNv());
 
-    _model->getInertiaMatrix(_M);
+    _model->computeInertiaMatrix(_M);
     _model->getJointPosition(_q);
     _model->getJointVelocity(_qdot);
     _p0 = _M * _qdot;

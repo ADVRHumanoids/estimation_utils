@@ -1,8 +1,8 @@
 #include <estimation_utils/payload/payload_estimation.h>
 
 #include <ros/ros.h>
-#include <RobotInterfaceROS/ConfigFromParam.h>
-#include <XBotInterface/RobotInterface.h>
+#include <xbot2_interface/ros/config_from_param.hpp>
+#include <xbot2_interface/robotinterface2.h>
 #include <std_msgs/Float64MultiArray.h>
 #include <eigen_conversions/eigen_msg.h>
 
@@ -17,8 +17,8 @@ int main(int argc, char **argv)
     ros::Publisher payload_params_pub = nh_priv.advertise<std_msgs::Float64MultiArray>("payload_params", 1);
     
     // get robot, model
-    auto robot = XBot::RobotInterface::getRobot(XBot::ConfigOptionsFromParamServer());
-    auto model = XBot::ModelInterface::getModel(XBot::ConfigOptionsFromParamServer());
+    auto robot = XBot::RobotInterface::getRobot(XBot::Utils::ConfigOptionsFromParamServer());
+    XBot::ModelInterface::Ptr model = XBot::ModelInterface::getModel(XBot::Utils::ConfigOptionsFromParamServer());
 
     // parameters from ros
     double dt = nh_priv.param("rate", 0.01);
@@ -58,7 +58,7 @@ int main(int argc, char **argv)
     {
         // sense state, update model
         robot->sense(false);
-        model->syncFrom(*robot, XBot::Sync::All, XBot::Sync::MotorSide);
+        model->syncFrom(*robot, XBot::ControlMode::ALL, XBot::Sync::MotorSide);
         model->update();
 
         // do estimation

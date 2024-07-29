@@ -4,7 +4,7 @@ set(export_config_name "@PROJECT_NAME@")
 
 include(CMakeFindDependencyMacro)
 find_dependency(Eigen3)
-find_dependency(XBotInterface)
+find_dependency(xbot2_interface)
 
 set_and_check(@PROJECT_NAME@_TARGETS
 "${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@Targets.cmake")
