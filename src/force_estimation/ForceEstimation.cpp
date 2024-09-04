@@ -1,12 +1,13 @@
-#include <estimation_utils/payload/ForceEstimation.h>
+#include <estimation_utils/force_estimation/ForceEstimation.h>
 
 using namespace estimation_utils;
 
-const double ForceEstimation::DEFAULT_SVD_THRESHOLD = 0.05;
 
 ForceEstimation::ForceEstimation(XBot::ModelInterface::ConstPtr model, 
+                                 double rate,
                                  double svd_threshold):
     _model(model),
+    _rate(rate),
     _ndofs(0)
 {
     _svd.setThreshold(svd_threshold);
@@ -75,6 +76,7 @@ XBot::ForceTorqueSensor::ConstPtr ForceEstimation::add_link(std::string name,
     static int id = -1;
     t.sensor = std::make_shared<XBot::ForceTorqueSensor>(urdf_link, id--);
     t.dofs = dofs;
+    t.wrench_offset.setZero();
     
     _tasks.push_back(t);
     
@@ -173,7 +175,37 @@ void ForceEstimation::update()
         
         wrench.head<3>() = sensor_R_w * wrench.head<3>();
         wrench.tail<3>() = sensor_R_w * wrench.tail<3>();
+
+        if(_reset_offset_running) {
+            _reset_offset_i++; 
+
+            //moving average
+            t.wrench_offset = t.wrench_offset + (wrench - t.wrench_offset) / _reset_offset_i;
+
+            if (_reset_offset_i >= _reset_offset_N) {
+
+                _reset_offset_running = false;
+                if (_filter_in_use) {
+                    t.filter->reset();
+                }
+            }
+
+        }
         
+        wrench = wrench - t.wrench_offset;
+
+        if (_filter_in_use) {
+            if (_filter_dead_zone > 0){
+                for (int i=0; i<wrench.size(); i++) {
+
+                    if (std::abs(wrench[i]) < _filter_dead_zone) {
+                        wrench[i] = 0;
+                    }
+                }
+            }
+            wrench = t.filter->process(wrench); 
+        }
+
         t.sensor->setWrench(wrench, 0.0);
         
     }
@@ -184,6 +216,36 @@ bool ForceEstimation::getResiduals(Eigen::VectorXd& res) const
     res = _y;
     return true;
 }
+
+void ForceEstimation::resetOffset(double sec) {
+
+    if (sec > 0) {
+        _reset_offset_i = 0;
+        _reset_offset_running = true;
+        _reset_offset_N = sec * _rate;
+    } 
+
+    for(TaskInfo& t : _tasks)
+    { 
+        t.wrench_offset.setZero();
+    }
+}
+
+bool ForceEstimation::initFilter(const double& damping, const double& bw, const double& dead_zone) {
+    
+    _filter_damping = damping;
+    _filter_bw = bw;
+    _filter_dead_zone = dead_zone;
+    _filter_in_use = true;
+
+    for(TaskInfo& t : _tasks)
+    {
+        t.filter = std::make_shared<estimation_utils::utils::FilterWrap<Eigen::Vector6d>>(
+            _filter_damping, _filter_bw, 1.0/_rate, 6);
+    }
+    
+    return true;
+} 
 
 void estimation_utils::ForceEstimation::log(XBot::MatLogger2::Ptr logger) const
 {
@@ -212,9 +274,8 @@ ForceEstimationMomentumBased::ForceEstimationMomentumBased(XBot::ModelInterface:
                                                            double rate,
                                                            double svd_threshold,
                                                            double obs_bw):
-    ForceEstimation(model, svd_threshold),
-    _k_obs(2.0 * M_PI * obs_bw),
-    _rate(rate)
+    ForceEstimation(model, rate, svd_threshold),
+    _k_obs(2.0 * M_PI * obs_bw)
 {
     init_momentum_obs();
 }
@@ -238,7 +299,9 @@ void ForceEstimationMomentumBased::compute_residual(Eigen::VectorXd& res)
 
     _y = _k_obs*(_p1 - _p2 - _p0);
       
-    getResiduals(res);
+    //strange bug here res is empty  
+    //getResiduals(res);
+    res = _y;
     
 }
 
