@@ -1,11 +1,12 @@
 #ifndef ESTIMATION_UTILS_FORCE_EST_H
 #define ESTIMATION_UTILS_FORCE_EST_H
 
-#include <xbot2_interface/xbotinterface2.h>
+#include <XBotInterface/ModelInterface.h>
 #include <algorithm>
+// #include <cartesian_interface/Macro.h>
 #include <matlogger2/matlogger2.h>
 
-#include <set>
+#include <estimation_utils/utils/SecondOrderFilter.h>
 
 namespace estimation_utils
 {
@@ -15,10 +16,9 @@ class ForceEstimation
 
 public:
 
-    typedef std::shared_ptr<ForceEstimation> Ptr;
-    typedef std::weak_ptr<ForceEstimation> WeakPtr;
+    // CARTESIO_DECLARE_SMART_PTR(ForceEstimation)
 
-    static const double DEFAULT_SVD_THRESHOLD;
+    static constexpr double DEFAULT_SVD_THRESHOLD = 0.05;
 
     /**
      * @brief ForceEstimation constructor.
@@ -27,6 +27,7 @@ public:
      * @param svd_threshold: threshold for solution regularization (close to singularities)
      */
     ForceEstimation(XBot::ModelInterface::ConstPtr model,
+                    double rate,
                     double svd_threshold = DEFAULT_SVD_THRESHOLD);
 
     /**
@@ -58,9 +59,14 @@ public:
 
     bool getResiduals(Eigen::VectorXd &res) const;
 
+    void resetOffset(double sec=3);
+
+    bool initFilter(const double& damping = 0.8, const double& bw = 3, const double& dead_zone = 0);
+
 protected:
 
     XBot::ModelInterface::ConstPtr _model;
+    double _rate;
 
 private:
 
@@ -72,7 +78,9 @@ private:
         XBot::ForceTorqueSensor::Ptr sensor;
         std::vector<int> dofs;
         std::string link_name;
-
+        //probably is better to store this into the forceTorque class
+        Eigen::Vector6d wrench_offset;
+        estimation_utils::utils::FilterWrap<Eigen::Vector6d>::Ptr filter;
     };
 
     std::set<int> _ignore_idx;
@@ -90,6 +98,18 @@ private:
     Eigen::JacobiSVD<Eigen::MatrixXd> _svd;
     Eigen::ColPivHouseholderQR<Eigen::MatrixXd> _qr;
 
+    //reset the offset things
+    bool _reset_offset_requested = false;
+    bool _reset_offset_running  = false;
+    unsigned int _reset_offset_i = 0;
+    double _reset_offset_N = 0;
+
+    //filter things. For now all ft have the same filter params
+    double _filter_damping;
+    double _filter_bw;
+    double _filter_dead_zone;
+    bool _filter_in_use = false;
+
 };
 
 class ForceEstimationMomentumBased : public ForceEstimation
@@ -100,10 +120,9 @@ public:
     // CARTESIO_DECLARE_SMART_PTR(ForceEstimationMomentumBased);
 
     static constexpr double DEFAULT_OBS_BW = 4.0;
-    static constexpr double DEFAULT_RATE = 200.0;
 
     ForceEstimationMomentumBased(XBot::ModelInterface::ConstPtr model,
-                                 double rate = DEFAULT_RATE,
+                                 double rate,
                                  double svd_threshold = DEFAULT_SVD_THRESHOLD,
                                  double obs_bw = DEFAULT_OBS_BW);
 
@@ -114,7 +133,7 @@ private:
 
     void init_momentum_obs();
 
-    double _rate, _k_obs;
+    double _k_obs;
 
     Eigen::VectorXd _y, _tau, _g, _b, _sol;
     Eigen::VectorXd _p0, _p1, _p2, _q, _qdot, _q_old, _h, _coriolis, _y_static;

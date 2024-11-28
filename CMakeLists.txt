@@ -12,8 +12,9 @@ add_subdirectory(src/kalman)
 
 add_subdirectory(src/payload)
 
-#TBD port ROS2
-#add_subdirectory(src/nodes)
+add_subdirectory(src/force_estimation)
+
+add_subdirectory(src/nodes)
 
 install(DIRECTORY include/${PROJECT_NAME}
         DESTINATION include/${PROJECT_NAME}
