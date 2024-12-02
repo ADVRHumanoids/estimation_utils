@@ -5,18 +5,16 @@
     <arg name="config_file"/>
 
     <arg name="gdb" default="false"/> <!-- for debug with gdb -->
-    <arg if="$(arg gdb)" name="prefix" let="gdb -ex run --arg" />
-    <arg unless="$(arg gdb)" name="prefix" let="" />
-
-    <rosparam file="$(arg config_file)" command="load"/>
+    <let if="$(var gdb)" name="prefix" value="gdb -ex run --arg" />
+    <let unless="$(var gdb)" name="prefix" value="" />
 
     <node pkg="estimation_utils" 
           exec="force_estimation_executor" 
           name="force_estimator"
           output="screen"
-          launch-prefix="$(arg prefix)">
+          launch-prefix="$(var prefix)">
 
-        <param from="$(arg config_file)"/>
+        <param from="$(var config_file)"/>
 
         <remap from="force_estimator/robot_description" to="xbotcore/robot_description"/>
         <remap from="force_estimator/robot_description_semantic" to="xbotcore/robot_description_semantic"/>

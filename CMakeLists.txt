@@ -20,5 +20,10 @@ install(DIRECTORY include/${PROJECT_NAME}
         DESTINATION include/${PROJECT_NAME}
         FILES_MATCHING PATTERN *.h)
 
+install(DIRECTORY launch
+        DESTINATION launch)
+install(DIRECTORY config
+        DESTINATION launch)
+
 include(cmake/ExportProject.cmake)
 export_project()
