@@ -7,7 +7,7 @@ int main(int argc, char ** argv)
 {
     
     rclcpp::init(argc, argv);
-    auto force_estimation_node = rclcpp::Node::make_shared<estimation_utils::ForceEstimationNode>();
+    auto force_estimation_node = std::make_shared<estimation_utils::ForceEstimationNode>();
 
     rclcpp::spin(force_estimation_node);
     rclcpp::shutdown();

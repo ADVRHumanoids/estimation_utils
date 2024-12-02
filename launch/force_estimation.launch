@@ -5,25 +5,24 @@
     <arg name="config_file"/>
 
     <arg name="gdb" default="false"/> <!-- for debug with gdb -->
-    <arg if="$(arg gdb)" name="prefix" value="gdb -ex run --arg" />
-    <arg unless="$(arg gdb)" name="prefix" value="" />
-
-    <remap from="force_estimator/robot_description" to="xbotcore/robot_description"/>
-    <remap from="force_estimator/robot_description_semantic" to="xbotcore/robot_description_semantic"/>
+    <arg if="$(arg gdb)" name="prefix" let="gdb -ex run --arg" />
+    <arg unless="$(arg gdb)" name="prefix" let="" />
 
     <rosparam file="$(arg config_file)" command="load"/>
 
     <node pkg="estimation_utils" 
-          type="force_estimation_node_executable" 
+          exec="force_estimation_executor" 
           name="force_estimator"
           output="screen"
           launch-prefix="$(arg prefix)">
 
-		  
-      <remap from="~torque_offset" to="cartesian/torque_offset"/>
-      <remap from="/xbotcore/command" to="null"/>
+        <param from="$(arg config_file)"/>
+
+        <remap from="force_estimator/robot_description" to="xbotcore/robot_description"/>
+        <remap from="force_estimator/robot_description_semantic" to="xbotcore/robot_description_semantic"/>
+        <remap from="~torque_offset" to="cartesian/torque_offset"/>
+        <remap from="/xbotcore/command" to="null"/>
                     
     </node>
-    
 
 </launch>

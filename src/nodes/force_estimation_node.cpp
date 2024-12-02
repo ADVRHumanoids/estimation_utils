@@ -2,7 +2,7 @@
 
 using estimation_utils::ForceEstimationNode;
 
-ForceEstimationNode::ForceEstimationNode(): Node("force_estimation_node") {
+ForceEstimationNode::ForceEstimationNode(): rclcpp::Node("force_estimation_node") {
 
     //lets wait for xbot
     if (!waitForXbotCore()) {
@@ -12,8 +12,20 @@ ForceEstimationNode::ForceEstimationNode(): Node("force_estimation_node") {
     }
     
     // get robot, model, and one imu
-    _robot = XBot::RobotInterface::getRobot(XBot::ConfigOptionsFromParamServer(*_nh));
-    _model = XBot::ModelInterface::getModel(XBot::ConfigOptionsFromParamServer(*_nh));
+    XBot::ConfigOptions xbot_cfg_robot = XBot::ConfigOptionsFromParams(rclcpp::Node::SharedPtr(this), "");
+    XBot::ConfigOptions xbot_cfg;
+
+    try
+    {
+        xbot_cfg = XBot::ConfigOptionsFromParams(rclcpp::Node::SharedPtr(this), "model_description/");
+    }
+    catch(std::exception& e)
+    {
+        xbot_cfg = xbot_cfg_robot;
+    }
+
+    _robot = XBot::RobotInterface::getRobot(xbot_cfg_robot);
+    _model = XBot::ModelInterface::getModel(xbot_cfg);
     
 
     if(_robot->getImu().size() > 0)
@@ -49,15 +61,16 @@ ForceEstimationNode::ForceEstimationNode(): Node("force_estimation_node") {
     this->declare_parameter("svd_threshold", (double)ForceEstimation::DEFAULT_SVD_THRESHOLD);
     double svd_th = this->get_parameter("svd_threshold").as_double();
 
-    // get torque offset map
-    this->declare_parameter("torque_offset", std::map<std::string, double>());
-    auto tau_off_map = _nh->param("torque_offset", std::map<std::string, double>());
-    XBot::JointNameMap tau_off_map_xbot(tau_off_map.begin(), tau_off_map.end());
-    _tau_offset.setZero(_model->getJointNum());
-    _model->mapToEigen(tau_off_map_xbot, _tau_offset);
+    // get torque offset map TODO
+    // this->declare_parameter("torque_offset", std::map<std::string, double>());
+    // auto tau_off_map = _nh->param("torque_offset", std::map<std::string, double>());
+    // XBot::JointNameMap tau_off_map_xbot(tau_off_map.begin(), tau_off_map.end());
+    // _tau_offset.setZero(_model->getJointNum());
+    // _model->mapToEigen(tau_off_map_xbot, _tau_offset);
     
     // ros service to request for zeroing the force estimation offset
-    _request_wrench_zero_offset = this->create_service("wrench_zero_offset", &ForceEstimationNode::wrenchZeroOffsetClbk, this);
+    _request_wrench_zero_offset = this->create_service<std_srvs::srv::Empty>("wrench_zero_offset", 
+        std::bind(&ForceEstimationNode::wrenchZeroOffsetClbk, this, std::placeholders::_1, std::placeholders::_2));
     this->declare_parameter("sec_to_reset", 3);
     _reset_time_sec = this->get_parameter("sec_to_reset").as_double();
     
@@ -86,12 +99,15 @@ ForceEstimationNode::ForceEstimationNode(): Node("force_estimation_node") {
     // generate virtual fts
     for(const auto& l : links)
     {
-        auto dofs = _nh->param(l + "/dofs", std::vector<int>());
-        
-        auto pub = _nh->advertise<geometry_msgs::WrenchStamped>("force_estimation/" + l, 1);
-        
-        _ft_map[l] = _f_est_ptr->add_link(l, dofs, chains);
-        _ft_pub_map[l] = pub;
+        this->declare_parameter(l + "/dofs", std::vector<long>());
+        std::vector<long> dofs;
+        this->get_parameter(l + "/dofs", dofs);
+
+        //TODO ROS2 is bad and does not allow to get params as vector of int, only long
+        std::vector<int> dofs_int(dofs.begin(), dofs.end());
+                
+        _ft_map[l] = _f_est_ptr->add_link(l, dofs_int, chains);
+        _ft_pub_map[l] = this->create_publisher<geometry_msgs::msg::WrenchStamped>("force_estimation/" + l, 1);
     }
 
     // log
@@ -109,9 +125,12 @@ ForceEstimationNode::ForceEstimationNode(): Node("force_estimation_node") {
     this->declare_parameter("enable_filter", false);
     bool enable_filter = this->get_parameter("enable_filter").as_bool();
     if(enable_filter) {
-        double filter_damp = _nh->param("filter_damp", 0.8);
-        double filter_bw = _nh->param("filter_bw", 3);
-        double filter_dead_zone = _nh->param("filter_dead_zone", 0); //lower than this forces are ignored
+        this->declare_parameter("filter_damp", 0.8);
+        double filter_damp = this->get_parameter("filter_damp").as_double();
+        this->declare_parameter("filter_bw", 3);
+        double filter_bw = this->get_parameter("filter_bw").as_double();
+        this->declare_parameter("filter_dead_zone", 0); //lower than this forces are ignored
+        double filter_dead_zone = this->get_parameter("filter_dead_zone").as_double();
         _f_est_ptr->initFilter(filter_damp, filter_bw, filter_dead_zone);
     }
 
@@ -141,19 +160,20 @@ ForceEstimationNode::ForceEstimationNode(): Node("force_estimation_node") {
         _arrow_max_norm = this->get_parameter("arrow_max_norm").as_double();
     }
 
+    auto period = (1.0/_rate) * 1s;
     _timer = this->create_wall_timer(
-        1.0/_rate, std::bind(&ForceEstimationNode::run, this));
+        period, std::bind(&ForceEstimationNode::run, this));
 }
 
 
-bool estimation_utils::ForceEstimationNode::run() {
+bool ForceEstimationNode::run() {
 
     // update model from robot, set imu
     _robot->sense(false);
-    _model->syncFrom(*_robot, XBot::Sync::All, XBot::Sync::MotorSide);
+    _model->syncFrom(*_robot, XBot::ControlMode::ALL, XBot::Sync::MotorSide);
     if(_model->isFloatingBase() && _imu)
     {
-        _model->setFloatingBaseState(_imu);
+        _model->setFloatingBaseState(*_imu);
         _model->update();
     }
     _model->update();
@@ -180,9 +200,9 @@ bool estimation_utils::ForceEstimationNode::run() {
 
         if (_ref_frame.size()>0) {
 
-            Eigen::Matrix3d sensor_R_ref;
+            Eigen::Affine3d sensor_R_ref;
             //source target
-            if (! _model->getOrientation(ft.second->getSensorName(), _ref_frame, sensor_R_ref)) {
+            if (! _model->getOrientation(ft.second->getName(), _ref_frame, sensor_R_ref)) {
                 return false;
             }
             
@@ -192,13 +212,19 @@ bool estimation_utils::ForceEstimationNode::run() {
             _wrench_msg.header.frame_id = _ref_frame;
 
         } else {
-            _wrench_msg.header.frame_id = ft.second->getSensorName();
+            _wrench_msg.header.frame_id = ft.second->getName();
 
         }
 
-        tf::wrenchEigenToMsg(wrench, _wrench_msg.wrench);
-        _wrench_msg.header.stamp = rclcpp::Time::now();
-        _ft_pub_map.at(ft.first).publish(_wrench_msg);
+        _wrench_msg.wrench.force.x = wrench(0);
+        _wrench_msg.wrench.force.y = wrench(1);
+        _wrench_msg.wrench.force.z = wrench(2);
+        _wrench_msg.wrench.torque.x = wrench(3);
+        _wrench_msg.wrench.torque.y = wrench(4);
+        _wrench_msg.wrench.torque.z = wrench(5);
+
+        _wrench_msg.header.stamp = this->now();
+        _ft_pub_map.at(ft.first)->publish(_wrench_msg);
     }
 
     if (_pub_markers) {
@@ -226,44 +252,37 @@ bool ForceEstimationNode::wrenchZeroOffsetClbk(
 bool ForceEstimationNode::waitForXbotCore(double timeout) {
     
     //ros::Time startTime = ros::Time::now();
-    rclcpp::Client client = this->create_client<xbot_msgs::srv::PluginStatus>("/xbotcore/ros_io/state");
-
-    auto wait_lambda = [&](){
+    rclcpp::Client<xbot_msgs::srv::PluginStatus>::SharedPtr client = 
+        this->create_client<xbot_msgs::srv::PluginStatus>("/xbotcore/ros_io/state");
         
-        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for XbotCore...");
-        if (!client->wait_for_service(timeout)) {
-            return false;
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for XbotCore...");
+    auto timeout_duration = timeout * 1s;
+    while (!client->wait_for_service(timeout * 1s)) {
+        if (!rclcpp::ok()) {
+        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Interrupted while waiting for the service. Exiting.");
+        return 0;
         }
-        
+    }
+    
+    auto status_request = std::make_shared<xbot_msgs::srv::PluginStatus::Request>();
+    auto status_result = client->async_send_request(status_request);
+    std::future_status status = status_result.wait_for(5s);
+
+    while (status != std::future_status::ready) {
+    }
+
+    if (status_result.get()->status.compare("Running") == 0) {
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "... XbotCore ready");
         return true;
-    };
-    
-    if (! wait_lambda()) {
-        return false;
-    }
-    
-    xbot_msgs::PluginStatus status;
-    rclcpp::Rate r(10);
-    rclcpp::Duration(1).sleep(); //necessary because idk but service is not really ready and the client.call hands 4ever
-    while(status.response.status.compare("Running") != 0) {
-        
-        if (!client.call(status)) {
-//              RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Call for XbotCore fail, I will retry...");
-//             if (! wait_lambda()) {
-//                 return false;
-//             }
-        }
-        r.sleep();
     }
 
-    return true;
-    
+    return false;
 }
 
 
 void ForceEstimationNode::publishArrows() {
     
-    visualization_msgs::MarkerArray markers;
+    visualization_msgs::msg::MarkerArray markers;
 
     for (const auto& ft : _ft_map) {
 
@@ -286,8 +305,8 @@ void ForceEstimationNode::publishArrows() {
         //     transformStamped.transform.rotation.z);
         
         
-        _marker.header.frame_id = ft.second->getSensorName();
-        _marker.header.stamp = rclcpp::Time::now();
+        _marker.header.frame_id = ft.second->getName();
+        _marker.header.stamp = this->now();
         _marker.ns = _marker.header.frame_id;
 
         Eigen::Vector6d wrench;
@@ -303,7 +322,7 @@ void ForceEstimationNode::publishArrows() {
             vect *= _arrow_max_norm / vect.norm() ;
         }
 
-        geometry_msgs::Point point1;
+        geometry_msgs::msg::Point point1;
         point1.x = vect(0);
         point1.y = vect(1);
         point1.z = vect(2);
@@ -312,5 +331,5 @@ void ForceEstimationNode::publishArrows() {
         markers.markers.push_back(_marker);
     }
 
-    _arrows_pub.publish(markers);
+    _arrows_pub->publish(markers);
 }

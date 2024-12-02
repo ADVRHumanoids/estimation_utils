@@ -9,7 +9,7 @@ set_target_properties(force_estimation PROPERTIES PREFIX "${PROJECT_NAME}_")
 target_link_libraries(force_estimation
     PUBLIC
     Eigen3::Eigen
-    XBotInterface::XBotInterface
+    xbot2_interface::xbot2_interface
     matlogger2::matlogger2
 )
 

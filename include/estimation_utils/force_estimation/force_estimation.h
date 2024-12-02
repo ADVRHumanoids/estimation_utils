@@ -1,12 +1,13 @@
 #ifndef ESTIMATION_UTILS_FORCE_EST_H
 #define ESTIMATION_UTILS_FORCE_EST_H
 
-#include <XBotInterface/ModelInterface.h>
+#include <set>
+#include <xbot2_interface/xbotinterface2.h>
 #include <algorithm>
 // #include <cartesian_interface/Macro.h>
 #include <matlogger2/matlogger2.h>
 
-#include <estimation_utils/utils/SecondOrderFilter.h>
+#include <estimation_utils/utils/second_order_filter.h>
 
 namespace estimation_utils
 {
