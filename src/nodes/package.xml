@@ -10,6 +10,7 @@
  <license>TODO: License declaration</license>
 
   <depend>rclcpp</depend>
+  <depend>rclpy</depend>
   <depend>geometry_msgs</depend>
   <depend>std_srvs</depend>
   <depend>visualization_msgs</depend>
