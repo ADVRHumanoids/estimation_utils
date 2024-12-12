@@ -3,7 +3,7 @@
 
 #include <Eigen/Dense>
 #include <xbot2_interface/xbotinterface2.h>
-#include <estimation_utils/payload/force_estimation.h>
+#include <estimation_utils/force_estimation/force_estimation.h>
 #include "../kalman/kalman.h"
 
 namespace estimation_utils
