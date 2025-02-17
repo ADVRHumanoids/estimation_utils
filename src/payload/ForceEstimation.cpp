@@ -10,6 +10,7 @@ ForceEstimation::ForceEstimation(XBot::ModelInterface::ConstPtr model,
     _ndofs(0)
 {
     _svd.setThreshold(svd_threshold);
+    _y.setZero(model->getJointNum());
 }
 
 
@@ -234,7 +235,7 @@ void ForceEstimationMomentumBased::compute_residual(Eigen::VectorXd& res)
     _model->computeNonlinearTerm(_h);
     _model->computeGravityCompensation(_g);
     _coriolis = _h - _g;
-    _p2 += (_tau + (_Mdot * _qdot - _coriolis) - _g + _y) / _rate;
+    _p2 += (_tau + (_Mdot * _qdot - _coriolis) - _g + res) / _rate;
 
     res = _k_obs*(_p1 - _p2 - _p0);
     
@@ -244,7 +245,6 @@ void ForceEstimationMomentumBased::init_momentum_obs()
 {
     _p1.setZero(_model->getJointNum());
     _p2.setZero(_model->getJointNum());
-    _y.setZero(_model->getJointNum());
     _coriolis.setZero(_model->getJointNum());
     _h.setZero(_model->getJointNum());
 

@@ -114,7 +114,7 @@ private:
 
     double _rate, _k_obs;
 
-    Eigen::VectorXd _y, _tau, _g, _b, _sol;
+    Eigen::VectorXd _tau, _g;
     Eigen::VectorXd _p0, _p1, _p2, _q, _qdot, _q_old, _h, _coriolis, _y_static;
     Eigen::MatrixXd _M, _M_old, _Mdot;
 };
