@@ -61,6 +61,7 @@ public:
 protected:
 
     XBot::ModelInterface::ConstPtr _model;
+    Eigen::VectorXd _y, _tau, _g, _b, _sol;
 
 private:
 
@@ -80,8 +81,6 @@ private:
     Eigen::MatrixXd _Jtot;
     Eigen::MatrixXd _A;
     Eigen::MatrixXd _Jtmp;
-
-    Eigen::VectorXd _y, _tau, _g, _b, _sol;
 
     std::vector<TaskInfo> _tasks;
     std::set<int> _meas_idx;
@@ -116,7 +115,6 @@ private:
 
     double _rate, _k_obs;
 
-    Eigen::VectorXd _y, _tau, _g, _b, _sol;
     Eigen::VectorXd _p0, _p1, _p2, _q, _qdot, _q_old, _h, _coriolis, _y_static;
     Eigen::MatrixXd _M, _M_old, _Mdot;
 };
